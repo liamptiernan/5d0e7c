@@ -25,7 +25,7 @@ class Conversations(APIView):
                 Conversation.objects.filter(Q(user1=user_id) | Q(user2=user_id))
                 .prefetch_related(
                     Prefetch(
-                        "messages", queryset=Message.objects.order_by("-createdAt")
+                        "messages", queryset=Message.objects.order_by("createdAt")
                     )
                 )
                 .all()
@@ -36,19 +36,11 @@ class Conversations(APIView):
             for convo in conversations:
                 convo_dict = {
                     "id": convo.id,
+                    "messages": [
+                        message.to_dict(["id", "text", "senderId", "createdAt"])
+                        for message in convo.messages.all()
+                    ],
                 }
-
-                # sort and set messages property of messages first to last
-                messages = [
-                    message.to_dict(["id", "text", "senderId", "createdAt"])
-                    for message in convo.messages.all()
-                ]
-                messages.sort(
-                  key=lambda message: message["createdAt"],
-                  reverse=False,
-                )
-
-                convo_dict["messages"] = messages
 
                 # set properties for notification count and latest message preview
                 convo_dict["latestMessageText"] = convo_dict["messages"][-1]["text"]
