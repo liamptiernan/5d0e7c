@@ -1,48 +1,50 @@
 /// <reference types="cypress" />
 
-const alice = {
-  username: "Alice",
-  email: "alice@example.com",
+const ringo = {
+  username: "Ringo",
+  email: "ringo@example.com",
   password: "Z6#6%xfLTarZ9U",
 };
-const bob = {
-  username: "Bob",
-  email: "bob@example.com",
+const george = {
+  username: "George",
+  email: "george@example.com",
   password: "L%e$xZHC4QKP@F",
 };
 
 describe("Read Status", () => {
   it("setup", () => {
-    cy.signup(alice.username, alice.email, alice.password);
+    cy.signup(ringo.username, ringo.email, ringo.password);
     cy.logout();
-    cy.signup(bob.username, bob.email, bob.password);
+    cy.signup(george.username, george.email, george.password);
     cy.logout();
   });
 
   it("displays total unread", () => {
-    cy.login(alice.username, alice.password);
+    cy.login(ringo.username, ringo.password);
 
-    cy.get("input[name=search]").type("Bob");
-    cy.contains("Bob").click();
+    cy.get("input[name=search]").type("George");
+    cy.contains("George").click();
 
     cy.get("input[name=text]").type("First message{enter}");
+    cy.wait(500)
     cy.get("input[name=text]").type("Second message{enter}");
+    cy.wait(500)
     cy.get("input[name=text]").type("Third message{enter}");
 
     cy.logout();
 
-    cy.login(bob.username, bob.password);
+    cy.login(george.username, george.password);
     cy.contains("3");
     cy.logout();
   });
 
   it("displays last read message", () => {
-    cy.login(bob.username, bob.password);
-    cy.contains("Alice").click();
+    cy.login(george.username, george.password);
+    cy.contains("Ringo").click();
     cy.logout();
 
-    cy.login(alice.username, alice.password);
-    cy.contains("Bob").click();
+    cy.login(ringo.username, ringo.password);
+    cy.contains("George").click();
     
     cy.get("svg").should(($list) => {
       expect($list).to.have.length(6)
