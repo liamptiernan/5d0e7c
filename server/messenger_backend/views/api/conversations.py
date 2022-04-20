@@ -44,6 +44,9 @@ class Conversations(APIView):
 
                 # set properties for notification count and latest message preview
                 convo_dict["latestMessageText"] = convo_dict["messages"][-1]["text"]
+                convo_dict["unreadMessageCount"] = sum(
+                  message["readAt"] == None and message["senderId"] != user_id for message in convo_dict["messages"]
+                )
 
                 # set a property "otherUser" so that frontend will have easier access
                 user_fields = ["id", "username", "photoUrl"]
@@ -95,13 +98,17 @@ class Conversations(APIView):
                 .first()
             )
 
-            messages_response = []
+            messages_response = {
+              "messages": []
+            }
 
             for message in conversation.messages.all():
               message.readAt = read_at
-              messages_response.append(message.to_dict())
+              messages_response["messages"].append(message.to_dict())
 
             Message.objects.bulk_update(conversation.messages.all(), ['readAt'])
+
+            messages_response["readMessageIds"] = read_messages
 
             return JsonResponse(
                 messages_response,

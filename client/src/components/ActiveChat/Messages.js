@@ -9,20 +9,21 @@ const Messages = (props) => {
   let lastRead;
 
   for (const message of messages) {
-    if (message.readAt && message.sendId !== userId) {
-      if (!lastRead || lastRead.readAt < message.readAt) {
+    if (message.readAt && message.senderId === userId) {
+      if (!lastRead || lastRead.createdAt < message.createdAt) {
         lastRead = message;
       }
     }
   }
 
-  console.log(lastRead)
-
   return (
     <Box>
       {messages.map((message) => {
         const time = moment(message.createdAt).format('h:mm');
-        const isLastRead = lastRead.id === message.id
+        let isLastRead = false;
+        if (lastRead && lastRead.id === message.id) {
+          isLastRead = true;
+        }
 
         return message.senderId === userId ? (
           <SenderBubble 
