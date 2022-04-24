@@ -88,7 +88,7 @@ const Home = ({ user, logout }) => {
       readMessages: readMessageIds
     }
 
-    const { data } = await axios.post("/api/conversations", body);
+    const { data } = await axios.patch("/api/conversations", body);
 
     socket.emit("read-messages", { conversationId, readAt, readMessageIds: data.readMessageIds });
   }, [socket]);
@@ -106,6 +106,7 @@ const Home = ({ user, logout }) => {
           });
 
           convoCopy.messages = newMessages;
+          convoCopy.lastReadMessage = Math.max(...data.readMessageIds);
           return convoCopy;
         } else {
           return convo;

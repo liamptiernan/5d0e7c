@@ -31,6 +31,8 @@ const Chat = ({ conversation, setActiveChat }) => {
     await setActiveChat(conversation.otherUser.username);
   };
 
+  const isUnread = conversation.unreadMessageCount > 0;
+
   return (
     <Box onClick={() => handleClick(conversation)} className={classes.root}>
       <BadgeAvatar
@@ -39,8 +41,11 @@ const Chat = ({ conversation, setActiveChat }) => {
         online={otherUser.online}
         sidebar={true}
       />
-      <ChatContent conversation={conversation} />
-      {conversation.unreadMessageCount > 0 && <Chip
+      <ChatContent
+        conversation={conversation}
+        isUnread={isUnread}
+      />
+      {isUnread && <Chip
         className={classes.unread}
         color="primary"
         label={conversation.unreadMessageCount}

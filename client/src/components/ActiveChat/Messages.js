@@ -4,27 +4,13 @@ import { SenderBubble, OtherUserBubble } from '.';
 import moment from 'moment';
 
 const Messages = (props) => {
-  const { messages, otherUser, userId } = props;
-
-  let lastRead;
-
-  for (const message of messages) {
-    if (message.readAt && message.senderId === userId) {
-      if (!lastRead || lastRead.createdAt < message.createdAt) {
-        lastRead = message;
-      }
-    }
-  }
+  const { lastReadMessage, messages, otherUser, userId } = props;
 
   return (
     <Box>
       {messages.map((message) => {
         const time = moment(message.createdAt).format('h:mm');
-        let isLastRead = false;
-        if (lastRead && lastRead.id === message.id) {
-          isLastRead = true;
-        }
-
+        let isLastRead = lastReadMessage && lastReadMessage === message.id;
         return message.senderId === userId ? (
           <SenderBubble 
             key={message.id}
