@@ -78,6 +78,43 @@ const Home = ({ user, logout }) => {
     }
   };
 
+  const markMessagesRead = useCallback(async (conversationId, messages) => {
+    const readMessageIds = messages.map(message => message.id);
+    const readAt = new Date();
+
+    const body = {
+      conversationId,
+      readAt,
+      readMessages: readMessageIds
+    }
+
+    const { data } = await axios.patch("/api/conversations", body);
+
+    socket.emit("read-messages", { conversationId, readAt, readMessageIds: data.readMessageIds });
+  }, [socket]);
+
+  const updateReadMessages = useCallback((data) => {
+    setConversations((prev) =>
+      prev.map((convo) => {
+        if (convo.id === data.conversationId) {
+          const convoCopy = { ...convo, messages: [ ...convo.messages ]}
+          const newMessages = convoCopy.messages.map(message => {
+            if (data.readMessageIds.includes(message.id)) {
+              message.readAt = data.readAt;
+            }
+            return message;
+          });
+
+          convoCopy.messages = newMessages;
+          convoCopy.lastReadMessage = Math.max(...data.readMessageIds);
+          return convoCopy;
+        } else {
+          return convo;
+        }
+      }),
+    );
+  }, [setConversations]);
+
   const addNewConvo = useCallback(
     (recipientId, message) => {
       setConversations((prev) => {
@@ -106,10 +143,13 @@ const Home = ({ user, logout }) => {
           id: message.conversationId,
           otherUser: sender,
           messages: [message],
+          unreadMessageCount: 0,
         };
         newConvo.latestMessageText = message.text;
         setConversations((prev) => [newConvo, ...prev]);
       }
+
+      let readMessages = [];
 
       setConversations((prev) => {
         return prev.map((convo) => {
@@ -118,16 +158,49 @@ const Home = ({ user, logout }) => {
           if (convoCopy.id === message.conversationId) {
             convoCopy.messages.push(message);
             convoCopy.latestMessageText = message.text;
+
+            if (message.senderId !== user.id) {
+              if (activeConversation === convoCopy.otherUser.username) {
+                readMessages.push(message);
+              } else {
+                convoCopy.unreadMessageCount++;
+              }
+            }
           }
-  
+
           return convoCopy;
         });
       });
+
+      if (readMessages.length > 0) {
+        markMessagesRead(message.conversationId, readMessages);
+      }
     },
-    [setConversations],
+    [activeConversation, markMessagesRead, setConversations, user.id],
   );
 
   const setActiveChat = (username) => {
+    const conversation = conversations.find(conversation => {
+      return conversation.otherUser.username === username;
+    });
+
+    let readMessages = conversation.messages.filter(message => {
+      return !message.readAt && message.senderId !== user.id;
+    });
+
+    setConversations((prev) => {
+      return prev.map((convo) => {
+        const convoCopy = { ...convo }
+
+        if (convoCopy.id === conversation.id) {
+          convoCopy.unreadMessageCount = 0;
+        }
+
+        return convoCopy;
+      });
+    });
+
+    if (readMessages.length > 0) { markMessagesRead(conversation.id, readMessages); }
     setActiveConversation(username);
   };
 
@@ -166,6 +239,7 @@ const Home = ({ user, logout }) => {
     socket.on("add-online-user", addOnlineUser);
     socket.on("remove-offline-user", removeOfflineUser);
     socket.on("new-message", addMessageToConversation);
+    socket.on("read-messages", updateReadMessages);
 
     return () => {
       // before the component is destroyed
@@ -173,8 +247,9 @@ const Home = ({ user, logout }) => {
       socket.off("add-online-user", addOnlineUser);
       socket.off("remove-offline-user", removeOfflineUser);
       socket.off("new-message", addMessageToConversation);
+      socket.off("read-messages", updateReadMessages);
     };
-  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, socket]);
+  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, socket, updateReadMessages]);
 
   useEffect(() => {
     // when fetching, prevent redirect
